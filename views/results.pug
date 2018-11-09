@@ -1,0 +1,122 @@
+extends layout
+
+block content
+    h1 Results
+    button.btn.btn-primary(onclick="location.href='/';") Go again
+    br
+    br
+    #errmsg.alert.alert-danger(hidden)
+    br
+    h2.lead Click on any of the tabs to view Gofer2's results
+    hr
+    .container-fluid
+        ul#nav.nav.nav-tabs
+
+        div#content.tab-content
+
+        table#test
+
+    script.
+        let request = !{JSON.stringify(goferReq)};
+
+        function renderNum(data, type, row) {
+            if (data < 0.001) {
+                return data.toExponential(3);
+            } else {
+                return data.toFixed(3);
+            }
+        };
+
+        function typeToCols(type) {
+            if (type === 'fisher') {
+                return ([
+                    {data: 'id'},
+                    {data: 'name'},
+                    {data: 'm'},
+                    {data: 'mt'},
+                    {data: 'n'},
+                    {data: 'nt'},
+                    {
+                        data: 'pval',
+                        render: renderNum
+                    },
+                    {
+                        data: 'padj',
+                        render: renderNum
+                    }
+                ]);
+            } else {
+                return ([
+                    {data: 'id'},
+                    {data: 'name'},
+                    {data: 'mpat'},
+                    {data: 'mt'},
+                    {data: 'npat'},
+                    {data: 'nt'},
+                    {
+                        data: 'pval',
+                        render: renderNum
+                    },
+                    {
+                        data: 'padj',
+                        render: renderNum
+                    }
+                ]);
+            }
+        };
+
+        $(document).ready(function() {
+
+            for (var i = 0; i < request.body.target.length; i++) {
+
+                var key = request.body.target[i];
+
+                $("#nav").append("<li class='nav-item'><a class='nav-link' data-toggle='tab' href='#" +
+                    key + "'>" + key + "</a></li>");
+
+                $("#content").append("<div class='tab-pane container-fluid' id=" +
+                    key + "><table class='table' id='" + key + "-tab" + "'>" +
+                    "<thead> <tr id='" + key + "-thead" + "'></tr></thead><tbody></tbody>" +
+                    "</table></div>");
+
+                let cp = JSON.parse(JSON.stringify(request.body));
+                cp.target = [cp.target[i]];
+
+                let cols = typeToCols(request.cols[cp.target[0]]);
+
+                for (var k in cols) {
+                    $("#" + key + "-thead").append("<th>" + cols[k].data + "</th>");
+                }
+
+                //console.log(cp);
+                $("#" + key + '-tab').DataTable({
+                    processing: false,
+                    serverSide: false,
+                    order: [[7, "asc"]],
+                    dom: 'Bfrtip',
+                    buttons: [
+                        'copy', 'csv', 'excel', 'print'
+                    ],
+                    ajax: {
+                        url: request.url,
+                        method: 'POST',
+                        data: function (d) {
+                            return JSON.stringify(cp);
+                        },
+                        dataSrc: function (d) {
+                            return d[cp.target[0]];
+                        },
+
+                        dataType: 'json',
+                        headers: {
+                            'content-type': 'application/json'
+                        }
+                    },
+                    columns: cols
+                });
+
+                $($($("#nav").children()[0]).children()[0]).click();
+            }
+        });
+
+

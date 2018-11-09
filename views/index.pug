@@ -1,0 +1,76 @@
+extends layout
+
+block content
+  .container
+    h1 Welcome to Peon!
+    h2.lead Get started immediately by filling in the form below:
+    hr
+    form#mainForm(action="/", method="post")
+      .form-group
+        label(for='testSetInput') Provide a gene set (delimited by white space or comma)
+        textarea#testSetInput.form-control(placeholder='Gene1, Gene2, Gene3, ...', required, rows='3', name='testSet')
+      .form-group
+        label(for='orgInput') Choose a species from the dropdown list
+        select#orgInput.form-control(onchange='changeTargets()', name='org', required)
+          option(disabled selected value) Choose a species
+          each val in org
+            option #{val.name}
+      .form-group
+        label(for='targetInput') Choose a number of target enrichments. Select multiple by holding down Ctrl, or Cmd
+        select#targetInput.form-control(multiple, name='target', required)
+          option(disabled selected value) First, choose a species above
+      .form-group#premadeBackgroundSection
+        label#premadeBackgroundLabel(for='premadeBackgroundInput', hidden) (Optional) Select a premade background
+        select#premadeBackgroundInput.form-control(hidden, name='premadeBackground')
+      .form-group
+        label(for='alphaInput') (Optional) Set an adjusted P-value cutoff
+        input.form-control#alphaInput(type='number', name='alpha', step=0.00001)
+      .form-group#customBackgroundSection
+        label(for='customBackgroundInput') (Optional) Add a custom background
+        textarea#customBackgroundInput.form-control(placeholder='Gene1, Gene2, Gene3, ...', rows='3', name='customBackground')
+      .form-group
+        label(for='regexInput') (Optional) Apply regular expression to parse gene lists
+        input.form-control#regexInput(type='text', name='regex', onkeyup='updateRegex()')
+      .form-group
+        label(for='regexOutput') Example RegEx match
+        .form-control#regexOutput(type='text', disabled)
+      button.btn.btn-primary(type='submit') Submit
+
+
+  script.
+    let org = !{JSON.stringify(org)};
+
+    function updateRegex() {
+        let regOutSel = $("#regexOutput");
+        regOutSel.text($("#testSetInput").val().substring(0, 80) + '...');
+        regex = new RegExp($("#regexInput").val(), 'g');
+        regOutSel.markRegExp(regex, {className: 'text-light bg-dark'});
+    }
+
+    function changeTargets() {
+      var targetSelector =  $("#targetInput");
+      targetSelector.empty();
+      for (var i = 0; i < org.length; i++) {
+          if (org[i].name === $("#orgInput").val()) {
+              // change targets
+              for (var j = 0; j < org[i].enrichment.length; j++) {
+                  targetSelector.append("<option>" + org[i].enrichment[j].name + "</option>");
+              }
+              // check if there are premade backgrounds available
+              var bgSelector =  $("#premadeBackgroundInput");
+              if (org[i].hasOwnProperty("background")) {
+                bgSelector.empty();
+                bgSelector.append("<option value='' selected>Default background</option>");
+                for (var j = 0; j < org[i].background.length; j++) {
+                    bgSelector.append("<option>" + org[i].background[j].name + "</option>");
+                }
+                $("#premadeBackgroundLabel").removeAttr('hidden');
+                bgSelector.removeAttr('hidden');
+              } else {
+                bgSelector.empty();
+                bgSelector.attr('hidden', true);
+                $("#premadeBackgroundLabel").attr('hidden', true);
+              }
+          }
+      }
+    }
