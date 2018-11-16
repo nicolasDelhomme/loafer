@@ -3,8 +3,6 @@ let urljoin = require('url-join');
 
 function generateGoferRequest(req, res, next) {
 
-    console.log(req.body);
-
     var suffix;
     for (var i = 0; i < conf.org.length; i++) {
         if (conf.org[i].name === req.body.org) {

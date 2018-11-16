@@ -9,7 +9,6 @@ function getEnrichmentTestType(enr, name) {
     return('generic');
 }
 
-
 function generateColumns(req, res, next) {
     var org;
     for (var i = 0; i < conf.org.length; i++) {
