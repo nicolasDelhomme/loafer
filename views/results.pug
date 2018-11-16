@@ -10,11 +10,16 @@ block content
     h2.lead Click on any of the tabs to view Gofer2's results
     hr
     .container-fluid
+        p Filters (apply to all tables)
+        .form-inline
+            .form-group
+                input.form-control#min-nt(type='number', placeholder='Min nt')
+                input.form-control#max-nt(type='number', placeholder='Max nt')
+                input.form-control#min-padj(type='number', placeholder='Min Padj')
+                input.form-control#max-padj(type='number', placeholder='Max Padj')    
+        hr
         ul#nav.nav.nav-tabs
-
         div#content.tab-content
-
-        table#test
 
     script.
         let request = !{JSON.stringify(goferReq)};
@@ -65,19 +70,61 @@ block content
             }
         };
 
+        $.fn.dataTable.ext.search.push(
+            function( settings, data, dataIndex ) {
+                var minnt = parseInt( $('#min-nt').val(), 10 );
+                var maxnt = parseInt( $('#max-nt').val(), 10 );
+                var nt = parseFloat( data[5] ) || 0;
+         
+                if ( ( isNaN( minnt ) && isNaN( maxnt ) ) ||
+                     ( isNaN( minnt ) && nt <= maxnt ) ||
+                     ( minnt <= nt   && isNaN( maxnt ) ) ||
+                     ( minnt <= nt   && nt <= maxnt ) ) 
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        );
+
+        $.fn.dataTable.ext.search.push(
+            function( settings, data, dataIndex ) {
+                var minpadj = parseFloat( $('#min-padj').val());
+                var maxpadj = parseFloat( $('#max-padj').val());
+                var padj = parseFloat( data[7] ) || 0;
+
+                if ( ( isNaN( minpadj ) && isNaN( maxpadj ) ) ||
+                     ( isNaN( minpadj ) && padj <= maxpadj ) ||
+                     ( minpadj <= padj && isNaN( maxpadj ) ) ||
+                     ( minpadj <= padj && padj <= maxpadj ) ) 
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        );
+
         $(document).ready(function() {
 
             for (var i = 0; i < request.body.target.length; i++) {
 
                 var key = request.body.target[i];
 
-                $("#nav").append("<li class='nav-item'><a class='nav-link' data-toggle='tab' href='#" +
-                    key + "'>" + key + "</a></li>");
+                // Add item in the navigator 
+                $("#nav").append("<li class='nav-item'><a class='nav-link' data-toggle='tab' href='#" + key + "'>" + key + "</a></li>");
 
+                // Add content div to be triggered by the nav
                 $("#content").append("<div class='tab-pane container-fluid' id=" +
-                    key + "><table class='table' id='" + key + "-tab" + "'>" +
-                    "<thead> <tr id='" + key + "-thead" + "'></tr></thead><tbody></tbody>" +
-                    "</table></div>");
+                key + "><br/><br/></div");
+
+                // Add a table to the content
+                $("#" + key).append("<table class='table' id='" + key + "-tab" + 
+                "'></table>");
+
+                // Add table header and body to the content
+                $("#" + key + "-tab").append("<thead><tr id='" + key + "-thead" + "'></tr></thead><tbody></tbody>");
 
                 let cp = JSON.parse(JSON.stringify(request.body));
                 cp.target = [cp.target[i]];
@@ -89,7 +136,7 @@ block content
                 }
 
                 //console.log(cp);
-                $("#" + key + '-tab').DataTable({
+                let tx = $("#" + key + '-tab').DataTable({
                     processing: false,
                     serverSide: false,
                     order: [[7, "asc"]],
@@ -116,6 +163,10 @@ block content
                 });
 
                 $($($("#nav").children()[0]).children()[0]).click();
+
+                $('#min-nt, #max-nt, #min-padj, #max-padj').keyup( function() {
+                    tx.draw();
+                } );
             }
         });
 
