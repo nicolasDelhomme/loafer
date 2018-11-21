@@ -1,27 +1,29 @@
 extends layout
 
 block content
-    h1 Results
-    button.btn.btn-primary(onclick="location.href='/';") Go again
-    #modal.modal(role='dialog', tabindex=-1)
-        .modal-dialog.modal-lg(role='document')
-            .modal-content
-                .modal-header
-                    h5 Gene list
-                    button.close(type='button', data-dismiss='modal')
-                        span &times;
-                .modal-body
-                    textarea#modal-input.form-control(type='textarea', readonly)
-                .modal-footer        
-                    button.btn.btn-secondary(type='button', data-dismiss='modal') Close
-    br
-    br
-    #errmsg.alert.alert-danger(hidden)
-    br
-    h2.lead Click on any of the tabs to view Gofer2's results
-    hr
     .container-fluid
-        p Filters (apply to all tables)
+        h1 Results
+        button.btn.btn-primary(onclick="location.href='/';") Go again
+        #modal.modal(role='dialog', tabindex=-1)
+            .modal-dialog.modal-lg(role='document')
+                .modal-content
+                    .modal-header
+                        h5 Gene list
+                        button.close(type='button', data-dismiss='modal')
+                            span &times;
+                    .modal-body
+                        textarea#modal-input.form-control(type='textarea', readonly)
+                    .modal-footer        
+                        button.btn.btn-secondary(type='button', data-dismiss='modal') Close
+        br
+        br
+        #errmsg.alert.alert-danger(hidden)
+        br
+        h2.lead Click on any of the tabs to view Gofer2's results
+        h2.lead Hover over table headers to get a short explanation of their meaning
+        hr
+    .container-fluid
+        h2.lead Filters (apply to all tables)
         .form-inline
             .form-group
                 input.form-control#min-nt(type='number', placeholder='Min nt')
@@ -65,6 +67,22 @@ block content
 
         function renderMpat(data, type, row) {   
             return '<a data-stype="mpat" href=# class="data-modal">' + data + '</a>'
+        }
+
+        function key_to_title(key) {
+            let d = {
+                "id": "The term ID",
+                "name": "A short name explaining the term",
+                "mpat": "The number of genes annotated to parents of the term in the whole population/background",
+                "mt": "The number of genes annotated to the term in the whole population/background",
+                "npat": "The number of genes annotated to parents of the term in the test set",
+                "nt": "The number of genes annotated to the term in the test set",
+                "m": "The number of genes annotated to any term in the population/background",
+                "n": "The numer of genes annotated to any term in the test set",
+                "pval": "The raw P-value of the significance test",
+                "padj": "The P-value adjusted for multiple testing via Benjamini-Hochberg"
+            };
+            return d[key];
         }
 
         function typeToCols(type) {
@@ -191,7 +209,11 @@ block content
                 let cols = typeToCols(request.cols[cp.target[0]]);
 
                 for (var k in cols) {
-                    $("#" + key + "-thead").append("<th>" + cols[k].data + "</th>");
+                    $("#" + key + "-thead").append("<th " + 
+                    "class='ttip' " +
+                    "data-toggle='tooltip' data-placement='top' " +
+                    "title='" + key_to_title(cols[k].data) + "' " +
+                    ">" + cols[k].data + "</th>");
                 }
 
                 //console.log(cp);
@@ -228,6 +250,7 @@ block content
                                 dataType: "json"
                             });
                         });
+                        $('.ttip').each(function(){$(this).tooltip()});
                     },
                     ajax: {
                         url: request.url,
