@@ -3,6 +3,17 @@ extends layout
 block content
     h1 Results
     button.btn.btn-primary(onclick="location.href='/';") Go again
+    #modal.modal(role='dialog', tabindex=-1)
+        .modal-dialog.modal-lg(role='document')
+            .modal-content
+                .modal-header
+                    h5 Gene list
+                    button.close(type='button', data-dismiss='modal')
+                        span &times;
+                .modal-body
+                    textarea#modal-input.form-control(type='textarea', readonly)
+                .modal-footer        
+                    button.btn.btn-secondary(type='button', data-dismiss='modal') Close
     br
     br
     #errmsg.alert.alert-danger(hidden)
@@ -30,17 +41,53 @@ block content
             } else {
                 return data.toFixed(3);
             }
-        };
+        }
+
+        function renderNt(data, type, row) {   
+            return '<a data-stype="nt" href=# class="data-modal">' + data + '</a>'
+        }
+
+        function renderMt(data, type, row) {   
+            return '<a data-stype="mt" href=# class="data-modal">' + data + '</a>'
+        }
+
+        function renderN(data, type, row) {   
+            return '<a data-stype="n" href=# class="data-modal">' + data + '</a>'
+        }
+
+        function renderM(data, type, row) {   
+            return '<a data-stype="m" href=# class="data-modal">' + data + '</a>'
+        }
+
+        function renderNpat(data, type, row) {   
+            return '<a data-stype="npat" href=# class="data-modal">' + data + '</a>'
+        }
+
+        function renderMpat(data, type, row) {   
+            return '<a data-stype="mpat" href=# class="data-modal">' + data + '</a>'
+        }
 
         function typeToCols(type) {
             if (type === 'fisher') {
                 return ([
                     {data: 'id'},
                     {data: 'name'},
-                    {data: 'm'},
-                    {data: 'mt'},
-                    {data: 'n'},
-                    {data: 'nt'},
+                    {
+                        data: 'm',
+                        render: renderM
+                    },
+                    {
+                        data: 'mt',
+                        render: renderMt
+                    },
+                    {
+                        data: 'n',
+                        render: renderN
+                    },
+                    {
+                        data: 'nt',
+                        render: renderNt
+                    },
                     {
                         data: 'pval',
                         render: renderNum
@@ -54,10 +101,22 @@ block content
                 return ([
                     {data: 'id'},
                     {data: 'name'},
-                    {data: 'mpat'},
-                    {data: 'mt'},
-                    {data: 'npat'},
-                    {data: 'nt'},
+                    {
+                        data: 'mpat',
+                        render: renderMpat
+                    },
+                    {
+                        data: 'mt',
+                        render: renderMt
+                    },
+                    {
+                        data: 'npat',
+                        render: renderNpat
+                    },
+                    {
+                        data: 'nt',
+                        render: renderNt
+                    },
                     {
                         data: 'pval',
                         render: renderNum
@@ -144,6 +203,32 @@ block content
                     buttons: [
                         'copy', 'csv', 'excel', 'print'
                     ],
+                    initComplete: function() {
+                        $('.data-modal').click(function(){
+                            let term = $($(this).parent().parent().children()[0]).text();
+                            let target = $($(this).parents()[5]).attr('id');
+                            let r = {
+                                    "target": target,
+                                    "term": term,
+                                    "genes": request.body.genes
+                            };
+                            let stype = $(this).attr('data-stype');
+                            $.ajax({
+                                type: "POST",
+                                url: request.url.replace('enrichment', 'get-sets'),
+                                data: JSON.stringify(r),
+                                headers: {
+                                    'content-type': 'application/json'
+                                },
+                                success: function(data) {
+                                    $('#modal-input')
+                                    .val(data[term].sets[stype].join(', '));
+                                    $('#modal').modal();
+                                },
+                                dataType: "json"
+                            });
+                        });
+                    },
                     ajax: {
                         url: request.url,
                         method: 'POST',
@@ -168,6 +253,7 @@ block content
                     tx.draw();
                 } );
             }
+
         });
 
 
